@@ -1,0 +1,87 @@
+﻿@page
+@using SnackRack.Pages.Features.Orders
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+<h2 class="mb-3">Orders</h2>
+
+<div class="mb-3">
+    <a asp-page="/Features/Orders/Create" class="btn btn-primary">
+        + Create Order
+    </a>
+</div>
+
+<table class="table table-bordered table-striped align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>Order Id</th>
+            <th>Customer</th>
+            <th>Status</th>
+            <th>Items</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Orders.Any())
+        {
+            <tr>
+                <td colspan="4" class="text-center text-muted">
+                    No orders found
+                </td>
+            </tr>
+        }
+        else
+        {
+            foreach (var order in Model.Orders)
+            {
+                <tr>
+                    <td class="small text-monospace">
+                        
+                        <a asp-page="/Features/Orders/Create"
+                           asp-route-orderId="@order.OrderId"
+                           class="text-decoration-none">
+                            Order
+                        </a>
+                    </td>
+                    <td>@order.CustomerName</td>
+                    <td>
+                        <span class="badge 
+                            @(order.Status == OrderStatus.Pending ? "bg-warning" :
+                              order.Status == OrderStatus.Submitted ? "bg-info" :
+                              order.Status == OrderStatus.Completed ? "bg-success" :
+                              "bg-secondary")">
+                            @order.Status
+                        </span>
+                    </td>
+                    <td>
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Qty</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in order.Items)
+                                {
+                                    <tr>
+                                        <td>@item.ProductName</td>
+                                        <td>@item.Quantity</td>
+                                        <td>@item.Price.ToString("C")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>

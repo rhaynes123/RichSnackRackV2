@@ -1,0 +1,48 @@
+@page
+@model SnackRack.Pages.Features.Orders.Confirmation
+
+@{
+    ViewData["Title"] = "Order Confirmed";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+
+            <div class="card shadow-sm border-success">
+                <div class="card-body text-center p-5">
+
+                    <div class="mb-4">
+                        <span class="display-4 text-success">✓</span>
+                    </div>
+
+                    <h2 class="card-title mb-3">Order Submitted</h2>
+
+                    <p class="text-muted mb-4">
+                        Your order has been successfully submitted and is now being processed.
+                    </p>
+
+                    <div class="mb-4">
+                        <div class="fw-semibold">Order ID</div>
+                        <div class="fw-monospace text-secondary">
+                            @Model.OrderId
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <span class="badge bg-primary">
+                            Status: @Model.Status
+                        </span>
+                    </div>
+
+                    <a asp-page="/Index"
+                       class="btn btn-outline-primary btn-lg">
+                        Back to Orders
+                    </a>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

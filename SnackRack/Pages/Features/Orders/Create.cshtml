@@ -1,0 +1,126 @@
+@page
+@model SnackRack.Pages.Features.Orders.CreateModel
+
+
+<h2>Create Order</h2>
+@Html.AntiForgeryToken()
+@if (Model.OrderId.HasValue)
+{
+    <div class="alert alert-secondary d-flex align-items-center mb-3" role="alert">
+        <i class="bi bi-receipt me-2"></i>
+
+        <div class="flex-grow-1">
+            <strong>Editing Order</strong><br />
+            <small class="text-muted">
+                Order ID:
+                <span class="fw-monospace">@Model.OrderId</span>
+            </small>
+        </div>
+
+        <span class="badge bg-warning text-dark">
+            @Model.Status
+        </span>
+    </div>
+
+    <input type="hidden"
+           id="currentOrderId"
+           name="OrderId"
+           value="@Model.OrderId" />
+}
+
+
+<!-- Search Bar -->
+<div class="mb-3">
+    <label class="form-label">Add Product</label>
+    <div class="input-group">
+        <input id="productSearch"
+               class="form-control"
+               placeholder="Enter product Name (demo)" />
+        <button class="btn btn-outline-primary"
+                onclick="addProduct()">
+            Add
+        </button>
+    </div>
+</div>
+
+<!-- Order Items -->
+<table class="table table-bordered align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Product</th>
+            <th class="text-end">Price</th>
+            <th class="text-center">Qty</th>
+            <th class="text-end">Total</th>
+        </tr>
+    </thead>
+    <tbody id="orderItems">
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td>@item.ProductName</td>
+                <td class="text-end">@item.Price.ToString("C")</td>
+                <td class="text-center">@item.Quantity</td>
+                <td class="text-end">@((item.Price * item.Quantity).ToString("C"))</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<button class="btn btn-success" onclick="submitOrder()">Submit Order</button>
+
+@section Scripts {
+<script>
+    async function submitOrder(){
+        const orderId = document.getElementById("currentOrderId").value;
+
+        const response = await fetch("?handler=Submit", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "RequestVerificationToken":
+                document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            },
+            body: JSON.stringify(orderId)
+        });
+    }
+async function addProduct() {
+    const name = document.getElementById("productSearch").value;
+    if (!name) return;
+    const orderId = document.getElementById("currentOrderId").value;
+
+    const response = await fetch("?handler=AddItem", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "RequestVerificationToken":
+                document.querySelector('input[name="__RequestVerificationToken"]')?.value
+        },
+        body: JSON.stringify({
+            productName: name,
+            orderId: orderId,
+        })
+    });
+
+    if (!response.ok) return;
+
+    const items = await response.json();
+    renderItems(items);
+}
+
+function renderItems(items) {
+    const tbody = document.getElementById("orderItems");
+    tbody.innerHTML = "";
+
+    for (const item of items) {
+        tbody.innerHTML += `
+            <tr>
+                <td>${item.productName}</td>
+                <td class="text-end">$${item.price.toFixed(2)}</td>
+                <td class="text-center">${item.quantity}</td>
+                <td class="text-end">$${(item.price * item.quantity).toFixed(2)}</td>
+            </tr>
+        `;
+    }
+}
+</script>
+}

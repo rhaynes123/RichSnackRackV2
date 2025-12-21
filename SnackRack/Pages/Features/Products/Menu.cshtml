@@ -1,0 +1,34 @@
+@page
+@model SnackRack.Pages.Features.Products.Menu
+
+@{
+}
+<h2 class="mb-3">Products</h2>
+
+<table class="table table-striped table-hover align-middle">
+    <thead class="table-dark">
+    <tr>
+        <th>Name</th>
+        <th class="text-end">Price</th>
+        <th class="text-center">Stock</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var product in Model.ActiveProducts)
+    {
+        <tr>
+            <td>@product.Name</td>
+            <td class="text-end">@product.Price.ToString("C")</td>
+            <td class="text-center">@product.Description</td>
+            <td class="text-end">
+                <a asp-page="/Features/Orders/Create"
+                   asp-route-productId="@product.Id"
+                   class="btn btn-sm btn-primary">
+                    Order
+                </a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
