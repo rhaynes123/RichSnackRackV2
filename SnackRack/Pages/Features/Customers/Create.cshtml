@@ -1,0 +1,46 @@
+@page
+@model SnackRack.Pages.Features.Customers.Create
+@{
+    ViewData["Title"] = "Create Customer";
+}
+<h1>Create</h1>
+
+<h4>Customer</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="CustomerRequest.Name" class="control-label"></label>
+                <input asp-for="CustomerRequest.Name" class="form-control" />
+                <span asp-validation-for="CustomerRequest.Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CustomerRequest.Email" class="control-label"></label>
+                <input type="email" asp-for="CustomerRequest.Email" class="form-control" />
+                <span asp-validation-for="CustomerRequest.Email" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CustomerRequest.PhoneNumber" class="control-label"></label>
+                <input asp-for="CustomerRequest.PhoneNumber" class="form-control" />
+                <span asp-validation-for="CustomerRequest.PhoneNumber" class="text-danger"></span>
+            </div>
+            
+            <div class="form-group">
+                
+                <input type="hidden" name="orderId" value="@Model.OrderId" />
+                <input type="submit" value="Create" class="btn btn-primary"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="Index">Back to List</a>
+</div>
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

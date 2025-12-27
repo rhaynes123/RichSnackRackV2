@@ -65,24 +65,13 @@
         }
     </tbody>
 </table>
-
-<button class="btn btn-success" onclick="submitOrder()">Submit Order</button>
+<form method="post" asp-page-handler="Submit">
+    <input type="hidden" name="orderId" value="@Model.OrderId" />
+    <button type="submit" class="btn btn-success">Submit Order</button>
+</form>
 
 @section Scripts {
 <script>
-    async function submitOrder(){
-        const orderId = document.getElementById("currentOrderId").value;
-
-        const response = await fetch("?handler=Submit", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "RequestVerificationToken":
-                document.querySelector('input[name="__RequestVerificationToken"]')?.value
-            },
-            body: JSON.stringify(orderId)
-        });
-    }
 async function addProduct() {
     const name = document.getElementById("productSearch").value;
     if (!name) return;

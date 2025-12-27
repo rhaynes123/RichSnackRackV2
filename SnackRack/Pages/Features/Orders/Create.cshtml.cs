@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SnackRack.Data;
+using SnackRack.Pages.Features.Customers;
 using SnackRack.Pages.Features.Products;
 
 namespace SnackRack.Pages.Features.Orders;
@@ -64,10 +65,10 @@ public class CreateModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostSubmit([FromBody]Guid? orderId)
+    public async Task<IActionResult> OnPostSubmit()
     {
         var order = await _db.Orders
-            .SingleAsync(o => o.Id == orderId);
+            .SingleAsync(o => o.Id == OrderId);
 
         if (order.Status != OrderStatus.Pending)
             return BadRequest();
@@ -75,12 +76,13 @@ public class CreateModel : PageModel
             string.IsNullOrWhiteSpace(order.Customer.PhoneNumber))
         {
             // I'm going to redirect to a page that makes customers fill in their information
+            return RedirectToPage("/Features/Customers/Create", new { orderId = order.Id });
         }
 
         order.Status = OrderStatus.Submitted;
         await _db.SaveChangesAsync();
 
-        return RedirectToPage("Confirmation", new { orderId = order.Id });
+        return RedirectToPage("/Features/Orders/Confirmation", new { orderId = order.Id });
     }
 
     // AJAX handler
@@ -170,16 +172,6 @@ public class Order
     public OrderStatus Status { get; set; }
 }
 
-public class Customer
-{
-    public Guid Id { get; init; } = Guid.CreateVersion7();
-    [StringLength(800)]
-    public string Name { get; set; } = "Guest";
-
-    [StringLength(800)] public string? Email { get; set; }
-    [StringLength(800)]public string? PhoneNumber { get; set; }
-    public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
-}
 
 public record AddItemToOrder
 {
