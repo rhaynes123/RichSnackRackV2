@@ -6,13 +6,15 @@ using SnackRack.Pages.Features.Products;
 
 namespace SnackRack.Data;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) 
+    : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Order> Orders { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<Customer> Customers { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder); // identity passkey data doesn't get set without calling base
         modelBuilder.Entity<Product>(p =>
         {
             p.ToTable("products");

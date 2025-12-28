@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SnackRack.Data;
+using SnackRack.Areas.Identity.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,20 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 //
 // builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
 //     .AddEntityFrameworkStores<ApplicationDbContext>();
+// The below line creates the pages
+// dotnet aspnet-codegenerator identity \
+// --files "Account.Login;Account.Register;Account.Logout"
+
+builder.Services
+    .AddDefaultIdentity<ApplicationUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+
+        options.Password.RequireDigit = true;
+        options.Password.RequiredLength = 8;
+        options.Password.RequireNonAlphanumeric = false;
+    })
+    .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddRazorPages();
 
@@ -46,7 +61,8 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
-//app.UseAuthorization();
+app.UseAuthorization();
+app.UseAuthentication();
 
 app.MapStaticAssets();
 app.MapRazorPages()

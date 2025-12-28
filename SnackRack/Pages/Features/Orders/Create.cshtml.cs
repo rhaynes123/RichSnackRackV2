@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -21,10 +22,13 @@ public class CreateModel : PageModel
     public Guid? OrderId { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
     private readonly ApplicationDbContext _db;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public CreateModel(ApplicationDbContext db)
+    public CreateModel(ApplicationDbContext db
+    , UserManager<ApplicationUser> userManager)
     {
         _db = db;
+        _userManager = userManager;
     }
 
     public async Task<IActionResult> OnGet()
@@ -68,16 +72,28 @@ public class CreateModel : PageModel
     public async Task<IActionResult> OnPostSubmit()
     {
         var order = await _db.Orders
+            .Include(o => o.Customer)
             .SingleAsync(o => o.Id == OrderId);
 
         if (order.Status != OrderStatus.Pending)
             return BadRequest();
-        if (string.IsNullOrWhiteSpace(order.Customer?.Name) || string.IsNullOrWhiteSpace(order.Customer.Email) ||
-            string.IsNullOrWhiteSpace(order.Customer.PhoneNumber))
+        
+        var currentUser = await _userManager.GetUserAsync(User);
+        if (currentUser is null 
+            || User.Identity?.IsAuthenticated == false 
+            || string.IsNullOrWhiteSpace(currentUser.PhoneNumber)
+            || string.IsNullOrWhiteSpace(currentUser.Email)
+            )
         {
             // I'm going to redirect to a page that makes customers fill in their information
             return RedirectToPage("/Features/Customers/Create", new { orderId = order.Id });
         }
+
+        order.Customer.CustomerTypeId = (int)CustomerType.Registered;
+        order.Customer.Name = User.Identity?.Name ?? "";
+        order.Customer.PhoneNumber = currentUser.PhoneNumber;
+        order.Customer.Email = currentUser.Email;
+        order.Customer.UserId = currentUser.Id.ToString();
 
         order.Status = OrderStatus.Submitted;
         await _db.SaveChangesAsync();

@@ -80,5 +80,15 @@ public class Customer
 
     [StringLength(800)] public string? Email { get; set; }
     [StringLength(800)]public string? PhoneNumber { get; set; }
+    [StringLength(800)]
+    public string? UserId { get; set; }
+
+    public int? CustomerTypeId { get; set; } = (int)CustomerType.Guest;
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+}
+
+public enum CustomerType
+{
+    Guest =1,
+    Registered=2,
 }
