@@ -11,6 +11,8 @@
         <th>Name</th>
         <th class="text-end">Price</th>
         <th class="text-center">Stock</th>
+        
+        <th class="text-center">Want to Leave a Review?</th>
         <th></th>
     </tr>
     </thead>
@@ -21,11 +23,18 @@
             <td>@product.Name</td>
             <td class="text-end">@product.Price.ToString("C")</td>
             <td class="text-center">@product.Description</td>
-            <td class="text-end">
+            <td class="text-center">
                 <a asp-page="/Features/Orders/Create"
                    asp-route-productId="@product.Id"
                    class="btn btn-sm btn-primary">
                     Order
+                </a>
+            </td>
+            <td class="text-end">
+                <a asp-page="/Features/Reviews/Create"
+                   asp-route-productId="@product.Id"
+                   class="btn btn-sm btn-success">
+                    Leave Review
                 </a>
             </td>
         </tr>

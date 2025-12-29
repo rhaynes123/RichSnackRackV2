@@ -60,6 +60,7 @@ public class CreateModel : PageModel
 
             return Page();
         }
+        OrderId = Guid.CreateVersion7();
         if (!ProductId.HasValue) return Page();
         var product = await GetProduct(ProductId.Value);
         if (product != null)
@@ -123,6 +124,7 @@ public class CreateModel : PageModel
             .Include(o => o.OrderItems)
             .FirstOrDefaultAsync(or => or.Id == OrderId) ?? new Order
         {
+            Id = OrderId ?? Guid.CreateVersion7(),
             Customer = Customer ?? new Customer(),
             Status = OrderStatus.Pending,
             OrderItems = Items

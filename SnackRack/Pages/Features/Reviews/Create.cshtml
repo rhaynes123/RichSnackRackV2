@@ -1,0 +1,49 @@
+@page
+@model SnackRack.Pages.Features.Reviews.Create
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+}
+
+@if (!SignInManager.IsSignedIn(User))
+{
+    
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <form id="reviewForm" method="post">
+                <input type="hidden"
+                       id="currentProductId"
+                       name="ProductId"
+                       value="@Model.ProductId" />
+                <h2>Leave a new Review.</h2>
+                <hr/>
+                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+                <div class="form-floating mb-3">
+                    <input asp-for="Review.Title" class="form-control" aria-required="true" placeholder="Taste great"/>
+                    <label asp-for="Review.Title">Title</label>
+                    <span asp-validation-for="Review.Title" class="text-danger"></span>
+                </div>
+                <div class="form-floating mb-3">
+                    <input asp-for="Review.ProductName" class="form-control" aria-required="true" placeholder="Taste great"/>
+                    <label asp-for="Review.ProductName">Product</label>
+                    <span asp-validation-for="Review.ProductName" class="text-danger"></span>
+                </div>
+                <div class="form-floating mb-3">
+                    <textarea asp-for="Review.ReviewText" class="form-control" aria-required="true">
+
+                    </textarea>
+                    <label asp-for="Review.ReviewText">Comment</label>
+                    <span asp-validation-for="Review.ReviewText" class="text-danger"></span>
+                </div>
+
+
+                <button id="submitReview" type="submit" class="w-100 btn btn-lg btn-primary">Submit</button>
+            </form>
+        </div>
+    </div>
+}
