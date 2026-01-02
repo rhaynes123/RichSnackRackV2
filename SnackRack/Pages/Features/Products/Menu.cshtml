@@ -10,8 +10,10 @@
     <tr>
         <th>Name</th>
         <th class="text-end">Price</th>
-        <th class="text-center">Stock</th>
+        <th class="text-center">Description</th>
         
+        <th class="text-center">Order?</th>
+        <th class="text-center">Read Reviews</th>
         <th class="text-center">Want to Leave a Review?</th>
         <th></th>
     </tr>
@@ -28,6 +30,13 @@
                    asp-route-productId="@product.Id"
                    class="btn btn-sm btn-primary">
                     Order
+                </a>
+            </td>
+            <td class="text-end">
+                <a asp-page="/Features/Reviews/AllReviews"
+                   asp-route-SearchTerm="@product.Name"
+                   class="btn btn-sm btn-success">
+                    Read Reviews
                 </a>
             </td>
             <td class="text-end">

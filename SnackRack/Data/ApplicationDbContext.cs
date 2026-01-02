@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using SnackRack.Data.Extensions;
 using SnackRack.Pages.Features.Customers;
 using SnackRack.Pages.Features.Orders;
 using SnackRack.Pages.Features.Products;
@@ -16,6 +17,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder); // identity passkey data doesn't get set without calling base
+        modelBuilder.HasDbFunction(typeof(DbFunctionExtensions)
+            .GetMethod(nameof(DbFunctionExtensions.RemoveHyphens)) ?? throw new InvalidOperationException())
+            .HasName("remove_hyphens");
         modelBuilder.Entity<Product>(p =>
         {
             p.ToTable("products");
@@ -107,3 +111,4 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         });
     }
 }
+

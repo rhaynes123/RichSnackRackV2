@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SnackRack.Data;
+using SnackRack.Data.Extensions;
 using SnackRack.Pages.Features.Customers;
 using SnackRack.Pages.Features.Products;
 
@@ -163,7 +164,7 @@ public class CreateModel : PageModel
     }
     private async Task<Product?> GetProduct(string name)
     {
-        return await _db.Products.FirstOrDefaultAsync(p => p.Name == name);
+        return await _db.Products.FirstOrDefaultAsync(p => DbFunctions.RemoveHyphens(p.Name) == name);
     }
 }
 public class OrderItem
