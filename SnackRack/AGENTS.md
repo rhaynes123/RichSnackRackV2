@@ -77,6 +77,10 @@ SnackRack.Tests/             ← test project (sibling directory)
 ### Backfill embeddings
 After adding or seeding new products, hit `GET /Features/Admin/BackfillEmbeddings` (shows count), then `POST` to generate missing embeddings via Ollama.
 
+## Changelog
+
+**Always update `CHANGELOG.md` when making code changes.** Add an entry under `## [Unreleased]` describing what was added, changed, or fixed. Follow the existing format — group by `### Added`, `### Changed`, `### Fixed`, and `### Tests` as appropriate.
+
 ## What to avoid
 
 - Do not add a `Models/` folder — follow the existing co-location pattern.

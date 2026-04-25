@@ -8,6 +8,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-04-25
+
+### Added
+- **Two-step product search** on the Menu page — LIKE search runs first; semantic search is used as a fallback only when LIKE returns no results.
+  - Avoids calling Ollama for straightforward keyword queries.
+  - Cosine distance threshold of `0.3` applied to semantic results to filter out low-relevance matches.
+- **Logging** added to `Menu.OnGet()` to trace which search path was taken, embedding dimensions, per-product distance scores, and result counts.
+- **Guard clause** in `OllamaEmbeddingService.GetEmbeddingAsync` — throws `ArgumentException` immediately on null or whitespace input before any HTTP call is made.
+
+### Tests
+- `MenuSearchTests` integration tests cover all four search scenarios: LIKE hit, semantic fallback, no results from either path, and empty search term.
+- `OllamaEmbeddingServiceTests` — three new theory cases asserting `ArgumentException` is thrown for `null`, `""`, and `"   "` inputs.
+
 ## [0.5.0] — 2026-04-23
 
 ### Added

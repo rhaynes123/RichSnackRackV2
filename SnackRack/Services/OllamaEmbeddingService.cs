@@ -16,6 +16,9 @@ public class OllamaEmbeddingService : IEmbeddingService
 
     public async Task<float[]> GetEmbeddingAsync(string text)
     {
+        if (string.IsNullOrWhiteSpace(text))
+            throw new ArgumentException("Cannot generate an embedding for null or empty text.", nameof(text));
+
         var baseUrl = _config["Ollama:BaseUrl"] ?? "http://localhost:11434";
         var response = await _httpClient.PostAsJsonAsync(
             $"{baseUrl}/api/embeddings",

@@ -69,6 +69,19 @@ public class OllamaEmbeddingServiceTests
         Assert.StartsWith("http://localhost:11434", capturedUrl);
     }
 
+    // ── Guard clauses ────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task GetEmbeddingAsync_ThrowsArgumentException_WhenTextIsNullOrWhitespace(string? text)
+    {
+        var sut = new OllamaEmbeddingService(BuildClient(OkJson("{\"embedding\":[]}")), BuildConfig());
+
+        await Assert.ThrowsAsync<ArgumentException>(() => sut.GetEmbeddingAsync(text!));
+    }
+
     // ── Error handling ───────────────────────────────────────────────────────
 
     [Fact]
