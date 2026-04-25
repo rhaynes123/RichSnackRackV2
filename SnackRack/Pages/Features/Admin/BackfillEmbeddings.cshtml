@@ -1,0 +1,16 @@
+@page
+@model SnackRack.Pages.Features.Admin.BackfillEmbeddings
+
+<h2>Backfill Product Embeddings</h2>
+<p>Products without an embedding: <strong>@Model.ProductsWithoutEmbedding</strong></p>
+
+@if (Model.ProcessedCount > 0)
+{
+    <div class="alert alert-success">
+        Processed @Model.ProcessedCount product(s).
+    </div>
+}
+
+<form method="post">
+    <button type="submit" class="btn btn-warning">Generate Missing Embeddings</button>
+</form>

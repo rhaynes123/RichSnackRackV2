@@ -1,0 +1,86 @@
+# Agents
+
+Guidelines for AI coding assistants working on this repository.
+
+## Build and test
+
+```bash
+dotnet build                                              # must pass with 0 errors
+dotnet test                                               # run after any code change
+dotnet ef migrations add <Name> --context ApplicationDbContext
+dotnet ef database update --context ApplicationDbContext
+```
+
+## Project layout
+
+```
+SnackRack/                   ← main app (working directory)
+├── Data/
+│   ├── ApplicationDbContext.cs   ← single EF Core context for the app
+│   ├── ApplicationUser.cs        ← Identity user extension
+│   └── Extensions/
+│       └── DbFunctionsExtensions.cs  ← remove_hyphens() DB function mapping
+├── Migrations/              ← EF Core migrations (real folder; Data/Migrations is a symlink)
+├── Pages/Features/          ← all Razor Pages, organised by feature
+│   ├── Admin/               ← BackfillEmbeddings
+│   ├── Customers/           ← guest checkout
+│   ├── Orders/              ← order creation + confirmation
+│   ├── Products/            ← Menu with semantic search
+│   └── Reviews/             ← create + all-reviews
+├── Services/                ← IEmbeddingService, OllamaEmbeddingService
+└── Areas/Identity/          ← scaffolded login/register/logout pages
+
+SnackRack.Tests/             ← test project (sibling directory)
+├── Unit/                    ← fast, no external deps
+└── Integration/             ← requires Docker (Testcontainers)
+```
+
+## Key conventions
+
+### Models live in the page model file
+`Product`, `Order`, `Customer`, `Review`, `OrderItem` and their related enums are all defined at the bottom of their feature's `.cshtml.cs` file — **not** in a separate `Models/` folder. Keep them there.
+
+### EF Core context
+`ApplicationDbContext` inherits from `IdentityDbContext<ApplicationUser>`. When adding new entities, configure them in `OnModelCreating` inside the existing entity blocks.
+
+### pgvector
+- `UseVector()` is wired into the Npgsql options in `Program.cs` — do not remove it.
+- `using Pgvector.EntityFrameworkCore;` is **required** in any file that calls `.CosineDistance()`. Without it, the query compiles but throws at runtime.
+- The `DescriptionEmbedding` column is `vector(768)` (Ollama `nomic-embed-text` dimensions).
+- The HNSW index uses `vector_cosine_ops` to match the `<=>` operator used in queries.
+
+### Migrations
+- Always pass `--context ApplicationDbContext` — the solution has a second Identity context.
+- EF Core does not scaffold HNSW indexes. Hand-append the `CREATE INDEX ... USING hnsw` SQL in the `Up` method and `DROP INDEX IF EXISTS` in `Down`.
+- Custom PostgreSQL functions (e.g. `remove_hyphens`) live in a dedicated migration and are hand-written with `migrationBuilder.Sql(...)`.
+
+### Ollama embedding service
+`OllamaEmbeddingService` takes a plain `HttpClient` (injected via `AddHttpClient<IEmbeddingService, OllamaEmbeddingService>()`) and reads `Ollama:BaseUrl` from configuration. In tests, pass a fake `HttpMessageHandler` directly — do not mock `HttpClient` itself.
+
+### docker-compose
+- `postgres` uses `pgvector/pgvector:pg16` (not plain `postgres:16`) so the `vector` extension is available.
+- `ollama-pull` is a one-shot service that pulls `nomic-embed-text` after `ollama` is healthy. `app` waits for `ollama-pull` to complete before starting.
+
+## Common tasks
+
+### Add a new feature page
+1. Create `Pages/Features/<Feature>/MyPage.cshtml` and `MyPage.cshtml.cs`.
+2. Any new model classes go at the bottom of `MyPage.cshtml.cs`.
+3. Register any new services in `Program.cs`.
+
+### Add a new database column
+1. Update the model class in the relevant `.cshtml.cs`.
+2. Add EF configuration in `ApplicationDbContext.OnModelCreating`.
+3. `dotnet ef migrations add <Name> --context ApplicationDbContext`.
+4. Review the generated migration SQL before applying.
+
+### Backfill embeddings
+After adding or seeding new products, hit `GET /Features/Admin/BackfillEmbeddings` (shows count), then `POST` to generate missing embeddings via Ollama.
+
+## What to avoid
+
+- Do not add a `Models/` folder — follow the existing co-location pattern.
+- Do not use `--no-verify` to skip git hooks.
+- Do not run `git push --force` to `main`.
+- Do not mock `ApplicationDbContext` in integration tests — use the Testcontainers fixture which provides a real PostgreSQL instance with migrations applied.
+- Do not hardcode the Ollama base URL — always read from `Ollama:BaseUrl` in configuration.

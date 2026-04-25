@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
 using SnackRack.Data.Extensions;
 using SnackRack.Pages.Features.Customers;
 using SnackRack.Pages.Features.Orders;
@@ -38,9 +39,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .IsRequired();
 
             p.HasIndex(x => x.Name);
+
+            p.Property(x => x.DescriptionEmbedding)
+                .HasColumnType("vector(768)")
+                .IsRequired(false);
         });
 
         modelBuilder.HasPostgresExtension("uuid-ossp");
+        modelBuilder.HasPostgresExtension("vector");
 
         // ---------- Customer ----------
         modelBuilder.Entity<Customer>(c =>

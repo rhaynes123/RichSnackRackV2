@@ -3,8 +3,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
+using Pgvector.EntityFrameworkCore;
 using SnackRack.Data;
 using SnackRack.Pages.Features.Orders;
+using SnackRack.Services;
 
 namespace SnackRack.Pages.Features.Products;
 
@@ -12,32 +15,55 @@ public class Menu : PageModel
 {
     public List<Product> ActiveProducts = [];
     private readonly ApplicationDbContext _db;
+    private readonly IEmbeddingService _embeddings;
 
-    public Menu(ApplicationDbContext db)
+    [BindProperty(SupportsGet = true)]
+    public string? SearchTerm { get; set; }
+
+    public Menu(ApplicationDbContext db, IEmbeddingService embeddings)
     {
         _db = db;
+        _embeddings = embeddings;
     }
+
     public async Task<IActionResult> OnGet()
     {
-        var products = await _db.Products.ToListAsync();
-        ActiveProducts = products.Where(x => x.IsActive == true).ToList();
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            var floats = await _embeddings.GetEmbeddingAsync(SearchTerm.Trim());
+            var queryVector = new Vector(floats);
+
+            ActiveProducts = await _db.Products
+                .Where(p => p.IsActive == true && p.DescriptionEmbedding != null)
+                .OrderBy(p => p.DescriptionEmbedding!.CosineDistance(queryVector))
+                .Take(10)
+                .ToListAsync();
+        }
+        else
+        {
+            ActiveProducts = await _db.Products
+                .Where(p => p.IsActive == true)
+                .ToListAsync();
+        }
+
         return Page();
     }
 }
 
 public class Product
 {
-    public Guid Id { get; set; } 
+    public Guid Id { get; set; }
     public required string Name { get; set; }
     public required string Description { get; set; }
     public decimal Price { get; set; }
     public string? ImageUrl { get; set; }
     public bool? IsActive { get; set; }
+    public Vector? DescriptionEmbedding { get; set; }
     public virtual ICollection<Review> Reviews { get; set; } = [];
     public virtual ICollection<Order> Orders { get; set; } = [];
 }
-[Table("reviews")]
 
+[Table("reviews")]
 public class Review
 {
     public Guid Id { get; set; } = Guid.CreateVersion7();

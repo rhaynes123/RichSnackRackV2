@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SnackRack.Data;
 using SnackRack.Areas.Identity.Data;
+using SnackRack.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +12,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        o => o.UseVector()
     ));
+
+builder.Services.AddHttpClient<IEmbeddingService, OllamaEmbeddingService>();
 
 
 
