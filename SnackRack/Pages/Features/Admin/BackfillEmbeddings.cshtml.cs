@@ -12,11 +12,13 @@ public class BackfillEmbeddings : PageModel
 {
     private readonly ApplicationDbContext _db;
     private readonly IEmbeddingService _embeddings;
+    private readonly ILogger<BackfillEmbeddings> _logger;
 
-    public BackfillEmbeddings(ApplicationDbContext db, IEmbeddingService embeddings)
+    public BackfillEmbeddings(ApplicationDbContext db, IEmbeddingService embeddings, ILogger<BackfillEmbeddings> logger)
     {
         _db = db;
         _embeddings = embeddings;
+        _logger = logger;
     }
 
     public int ProductsWithoutEmbedding { get; set; }
@@ -53,8 +55,10 @@ public class BackfillEmbeddings : PageModel
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            return RedirectToPage("/Index");
+            _logger.LogError(e, "Error during embedding backfill");
+            TempData["ErrorMessage"] = "An error occurred during the embedding backfill. Please try again.";
+            ProductsWithoutEmbedding = await _db.Products.CountAsync(p => p.DescriptionEmbedding == null);
+            return Page();
         }
     }
 }

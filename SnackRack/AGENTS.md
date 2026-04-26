@@ -81,6 +81,59 @@ After adding or seeding new products, hit `GET /Features/Admin/BackfillEmbedding
 
 **Always update `CHANGELOG.md` when making code changes.** Add an entry under `## [Unreleased]` describing what was added, changed, or fixed. Follow the existing format — group by `### Added`, `### Changed`, `### Fixed`, and `### Tests` as appropriate.
 
+## Control flow style
+
+Prefer early returns over `if/else` branches. When a condition can exit or short-circuit, invert it and return immediately so the happy path continues at the outer indentation level. Do not add an `else` block after a `return`, `throw`, or `continue`.
+
+```csharp
+// Preferred
+if (string.IsNullOrWhiteSpace(SearchTerm))
+{
+    ActiveProducts = await _db.Products.Where(p => p.IsActive == true).ToListAsync();
+    return Page();
+}
+
+// do work with SearchTerm here...
+
+// Avoid
+if (!string.IsNullOrWhiteSpace(SearchTerm))
+{
+    // ... nested work ...
+}
+else
+{
+    ActiveProducts = await _db.Products.Where(p => p.IsActive == true).ToListAsync();
+}
+```
+
+Apply the same pattern inside loops and nested blocks. The goal is a linear, top-to-bottom read with minimal nesting.
+
+## Error handling style
+
+- Use `ILogger<T>` — never `Console.WriteLine`. Inject `ILogger<T>` via the constructor.
+- Wrap only the failure-prone call in try/catch, not the whole method.
+- On catch: log the exception, set `TempData["ErrorMessage"]` with a user-friendly message, and return `Page()` or a redirect so the user stays informed.
+- Guard against null with early returns (`NotFound()`, `Forbid()`, `return Page()`) rather than relying on downstream null-reference exceptions.
+- `TempData["ErrorMessage"]` is rendered globally by `_Layout.cshtml` — no per-page markup is needed.
+
+```csharp
+// Preferred
+var order = await _db.Orders.SingleOrDefaultAsync(o => o.Id == OrderId);
+if (order is null)
+    return NotFound();
+
+try
+{
+    await _db.SaveChangesAsync();
+}
+catch (Exception ex)
+{
+    _logger.LogError(ex, "Failed to submit order {OrderId}", OrderId);
+    TempData["ErrorMessage"] = "An error occurred. Please try again.";
+    return RedirectToPage(...);
+}
+```
+
 ## What to avoid
 
 - Do not add a `Models/` folder — follow the existing co-location pattern.

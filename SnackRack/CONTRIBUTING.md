@@ -42,6 +42,39 @@ Update HNSW index to use cosine distance operator
 - Do not commit connection strings or secrets. Use `appsettings.Development.json` (git-ignored) or `dotnet user-secrets`.
 - New migrations must be reviewed before merging — always check the generated SQL is correct.
 
+### Control flow
+
+Prefer early returns over `if/else` branches. Invert conditions that can exit early and return immediately — never add an `else` block after a `return`.
+
+```csharp
+// Preferred — guard first, happy path continues at top-level indentation
+if (string.IsNullOrWhiteSpace(SearchTerm))
+{
+    ActiveProducts = await GetAllActiveProductsAsync();
+    return Page();
+}
+
+// ... work with SearchTerm here ...
+
+// Avoid — nesting the real work inside a positive branch
+if (!string.IsNullOrWhiteSpace(SearchTerm))
+{
+    // ... nested work ...
+}
+else
+{
+    ActiveProducts = await GetAllActiveProductsAsync();
+}
+```
+
+### Error handling
+
+- Use `ILogger<T>` — never `Console.WriteLine`. Inject it via the constructor.
+- Wrap only the failure-prone call in try/catch, not the whole method.
+- On catch: log with `_logger.LogError`, set `TempData["ErrorMessage"]` with a friendly message, and return `Page()` or a redirect.
+- Guard against null with early returns (`NotFound()`, `Forbid()`, `return Page()`) before doing any further work with the value.
+- `TempData["ErrorMessage"]` is displayed globally by `_Layout.cshtml` — no per-page markup is needed.
+
 ## Adding a migration
 
 Always specify the context, as the solution has more than one `DbContext`:

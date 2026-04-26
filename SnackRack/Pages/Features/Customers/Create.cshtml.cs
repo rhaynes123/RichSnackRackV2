@@ -16,12 +16,14 @@ public class Create : PageModel
     public Guid? CustomerId { get; set; }
     
     [BindProperty(SupportsGet = true)]
-    public Guid? OrderId { get; set; } 
+    public Guid? OrderId { get; set; }
     private readonly ApplicationDbContext _db;
+    private readonly ILogger<Create> _logger;
 
-    public Create(ApplicationDbContext db)
+    public Create(ApplicationDbContext db, ILogger<Create> logger)
     {
         _db = db;
+        _logger = logger;
     }
     public async Task<IActionResult> OnGet()
     {
@@ -54,9 +56,18 @@ public class Create : PageModel
             return RedirectToPage("Index");
         }
         order?.Status = OrderStatus.Submitted;
-        await _db.SaveChangesAsync();
-        
-        return  RedirectToPage(
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save customer details for order {OrderId}", OrderId);
+            TempData["ErrorMessage"] = "An error occurred while saving your details. Please try again.";
+            return Page();
+        }
+
+        return RedirectToPage(
             "/Features/Orders/Confirmation",
             new { OrderId = OrderId }
         );

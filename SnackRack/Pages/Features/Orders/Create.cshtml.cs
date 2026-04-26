@@ -24,12 +24,13 @@ public class CreateModel : PageModel
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ILogger<CreateModel> _logger;
 
-    public CreateModel(ApplicationDbContext db
-    , UserManager<ApplicationUser> userManager)
+    public CreateModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager, ILogger<CreateModel> logger)
     {
         _db = db;
         _userManager = userManager;
+        _logger = logger;
     }
 
     public async Task<IActionResult> OnGet()
@@ -75,14 +76,17 @@ public class CreateModel : PageModel
     {
         var order = await _db.Orders
             .Include(o => o.Customer)
-            .SingleAsync(o => o.Id == OrderId);
+            .SingleOrDefaultAsync(o => o.Id == OrderId);
+
+        if (order is null)
+            return NotFound();
 
         if (order.Status != OrderStatus.Pending)
             return BadRequest();
-        
+
         var currentUser = await _userManager.GetUserAsync(User);
-        if (currentUser is null 
-            || User.Identity?.IsAuthenticated == false 
+        if (currentUser is null
+            || User.Identity?.IsAuthenticated == false
             || string.IsNullOrWhiteSpace(currentUser.PhoneNumber)
             || string.IsNullOrWhiteSpace(currentUser.Email)
             )
@@ -98,7 +102,16 @@ public class CreateModel : PageModel
         order.Customer.UserId = currentUser.Id.ToString();
 
         order.Status = OrderStatus.Submitted;
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to submit order {OrderId}", OrderId);
+            TempData["ErrorMessage"] = "An error occurred while submitting your order. Please try again.";
+            return RedirectToPage("/Features/Orders/Create", new { orderId = OrderId });
+        }
 
         return RedirectToPage("/Features/Orders/Confirmation", new { orderId = order.Id });
     }
@@ -112,7 +125,15 @@ public class CreateModel : PageModel
             return NotFound();
         OrderId = request.OrderId;
 
-        await AddOrIncrement(product);
+        try
+        {
+            await AddOrIncrement(product);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to add item to order {OrderId}", request.OrderId);
+            return StatusCode(500, new { error = "An error occurred while adding the item." });
+        }
 
         return new JsonResult(Items);
     }

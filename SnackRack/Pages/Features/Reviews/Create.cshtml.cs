@@ -14,12 +14,13 @@ public class Create : PageModel
     public ReviewModel Review { get; set; } = new();
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
-    
+    private readonly ILogger<Create> _logger;
 
-    public Create(ApplicationDbContext db,  UserManager<ApplicationUser> userManager)
+    public Create(ApplicationDbContext db, UserManager<ApplicationUser> userManager, ILogger<Create> logger)
     {
         _db = db;
         _userManager = userManager;
+        _logger = logger;
     }
     public async Task<IActionResult> OnGet()
     {
@@ -55,15 +56,27 @@ public class Create : PageModel
             return Page();
         }
 
+        if (currentUser is null)
+            return Forbid();
+
         var newReview = new Review
         {
             Product = product,
             Title = Review.Title,
             Comment = Review.ReviewText ?? string.Empty,
-            User = currentUser
+            User = currentUser!
         };
         await _db.Reviews.AddAsync(newReview);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save review for product {ProductId}", ProductId);
+            TempData["ErrorMessage"] = "An error occurred while saving your review. Please try again.";
+            return RedirectToPage(new { ProductId });
+        }
         return RedirectToPage("./MyReviews");
     }
 }
