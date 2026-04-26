@@ -1,0 +1,74 @@
+@page
+@model SnackRack.Pages.Features.Admin.SearchLogs
+@using SnackRack.Pages.Features.Products
+
+<h2>Search Logs</h2>
+
+<div class="mb-3">
+    <form method="get">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="zeroResults" name="ZeroResultsOnly" value="true"
+                   @(Model.ZeroResultsOnly ? "checked" : "") onchange="this.form.submit()"/>
+            <label class="form-check-label" for="zeroResults">Zero-result searches only</label>
+        </div>
+    </form>
+</div>
+
+<p class="text-muted">@Model.TotalCount result(s) — page @Model.CurrentPage of @(Model.TotalPages == 0 ? 1 : Model.TotalPages)</p>
+
+<table class="table table-sm table-hover">
+    <thead>
+        <tr>
+            <th>Term</th>
+            <th>Type</th>
+            <th>LIKE hits</th>
+            <th>Semantic hits</th>
+            <th>Top distance</th>
+            <th>User</th>
+            <th>Searched at (UTC)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var log in Model.Logs)
+        {
+            <tr class="@(log.LikeResultCount == 0 && log.SemanticResultCount == 0 ? "table-warning" : "")">
+                <td>@log.SearchTerm</td>
+                <td>
+                    @switch (log.SearchType)
+                    {
+                        case SearchType.Like:
+                            <span class="badge bg-success">LIKE</span>
+                            break;
+                        case SearchType.Semantic:
+                            <span class="badge bg-primary">Semantic</span>
+                            break;
+                        case SearchType.SemanticUnavailable:
+                            <span class="badge bg-danger">Unavailable</span>
+                            break;
+                    }
+                </td>
+                <td>@log.LikeResultCount</td>
+                <td>@log.SemanticResultCount</td>
+                <td>@(log.TopDistance.HasValue ? log.TopDistance.Value.ToString("F4") : "—")</td>
+                <td>@(log.UserId is not null ? "Registered" : "Guest")</td>
+                <td>@log.SearchedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (Model.TotalPages > 1)
+{
+    <nav>
+        <ul class="pagination">
+            @for (var i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                    <a class="page-link" asp-page="SearchLogs"
+                       asp-route-CurrentPage="@i"
+                       asp-route-ZeroResultsOnly="@Model.ZeroResultsOnly">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

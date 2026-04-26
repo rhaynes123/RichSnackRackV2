@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using System.Text.Json;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Pgvector;
 using SnackRack.Data.Extensions;
@@ -15,6 +16,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Product> Products { get; set; }
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Review> Reviews { get; set; }
+    public DbSet<SearchLog> SearchLogs { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder); // identity passkey data doesn't get set without calling base
@@ -47,6 +49,36 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.HasPostgresExtension("uuid-ossp");
         modelBuilder.HasPostgresExtension("vector");
+
+        // ---------- SearchLog ----------
+        modelBuilder.Entity<SearchLog>(s =>
+        {
+            s.ToTable("search_logs");
+
+            s.HasKey(x => x.Id);
+
+            s.Property(x => x.Id)
+                .ValueGeneratedNever();
+
+            s.Property(x => x.SearchTerm)
+                .HasMaxLength(500)
+                .IsRequired();
+
+            s.Property(x => x.SearchType)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
+
+            s.Property(x => x.Results)
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<SearchResultItem>>(v, (JsonSerializerOptions?)null) ?? new List<SearchResultItem>()
+                );
+
+            s.HasIndex(x => x.SearchedAt);
+            s.HasIndex(x => x.SearchType);
+        });
 
         // ---------- Customer ----------
         modelBuilder.Entity<Customer>(c =>

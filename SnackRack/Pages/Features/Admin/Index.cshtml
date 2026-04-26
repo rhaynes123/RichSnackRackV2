@@ -1,0 +1,15 @@
+@page
+@model SnackRack.Pages.Features.Admin.Index
+
+<h2>Admin</h2>
+
+<div class="list-group mt-3">
+    <a asp-page="/Features/Admin/BackfillEmbeddings" class="list-group-item list-group-item-action">
+        <strong>Backfill Embeddings</strong>
+        <p class="mb-0 text-muted small">Generate missing product description embeddings via Ollama.</p>
+    </a>
+    <a asp-page="/Features/Admin/SearchLogs" class="list-group-item list-group-item-action">
+        <strong>Search Logs</strong>
+        <p class="mb-0 text-muted small">Audit semantic search queries, result counts, and cosine distances.</p>
+    </a>
+</div>

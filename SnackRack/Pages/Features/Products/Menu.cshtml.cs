@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -49,7 +50,10 @@ public class Menu : PageModel
         _logger.LogInformation("LIKE search returned {Count} product(s).", ActiveProducts.Count);
 
         if (ActiveProducts.Count > 0)
+        {
+            await WriteSearchLog(term, SearchType.Like, ActiveProducts.Count, 0, []);
             return Page();
+        }
 
         _logger.LogInformation("No LIKE matches, falling back to semantic search.");
 
@@ -77,14 +81,40 @@ public class Menu : PageModel
 
             if (ActiveProducts.Count == 0)
                 _logger.LogWarning("Semantic search also returned nothing — embeddings may not be backfilled, or the threshold ({Threshold}) may be too strict.", similarityThreshold);
+
+            var resultItems = results.Select(r => new SearchResultItem(r.Product.Id, r.Distance)).ToList();
+            await WriteSearchLog(term, SearchType.Semantic, 0, ActiveProducts.Count, resultItems);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Semantic search unavailable for term '{SearchTerm}'.", term);
             TempData["ErrorMessage"] = "Semantic search is unavailable. Showing no results for your query.";
+            await WriteSearchLog(term, SearchType.SemanticUnavailable, 0, 0, []);
         }
 
         return Page();
+    }
+
+    private async Task WriteSearchLog(string term, SearchType type, int likeCount, int semanticCount, List<SearchResultItem> results)
+    {
+        try
+        {
+            _db.SearchLogs.Add(new SearchLog
+            {
+                SearchTerm = term,
+                SearchType = type,
+                LikeResultCount = likeCount,
+                SemanticResultCount = semanticCount,
+                TopDistance = results.Count > 0 ? results.Min(r => r.Distance) : null,
+                Results = results,
+                UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            });
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to write search log for term '{SearchTerm}'", term);
+        }
     }
 }
 
@@ -111,4 +141,21 @@ public class Review
     [StringLength(1000)]
     public required string Comment { get; set; }
     public required ApplicationUser User { get; set; }
+}
+
+public enum SearchType { Like, Semantic, SemanticUnavailable }
+
+public record SearchResultItem(Guid ProductId, double Distance);
+
+public class SearchLog
+{
+    public Guid Id { get; init; } = Guid.CreateVersion7();
+    public required string SearchTerm { get; init; }
+    public SearchType SearchType { get; init; }
+    public int LikeResultCount { get; init; }
+    public int SemanticResultCount { get; init; }
+    public double? TopDistance { get; init; }
+    public List<SearchResultItem> Results { get; init; } = [];
+    public DateTime SearchedAt { get; init; } = DateTime.UtcNow;
+    public string? UserId { get; init; }
 }

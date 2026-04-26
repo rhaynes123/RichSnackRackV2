@@ -8,6 +8,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-04-26
+
+### Added
+- **Search audit log** — every search on the Menu page writes a row to the new `search_logs` table recording the term, search path taken (`Like`, `Semantic`, `SemanticUnavailable`), result counts, top cosine distance, matched product IDs + distances (stored as `jsonb`), timestamp, and user ID if authenticated.
+- **Search Logs admin page** at `/Features/Admin/SearchLogs` — paginated table of all search events with a "zero-result searches only" toggle for identifying gaps in product coverage or embedding quality.
+- **Admin index page** at `/Features/Admin` — lists all admin sub-pages with descriptions so they are discoverable without knowing the URLs. Link added to the main nav bar.
+- `AddSearchLogs` migration — creates the `search_logs` table with indexes on `SearchedAt` and `SearchType`.
+
+### Changed
+- **Graceful error handling** across all pages — errors are now surfaced to the user via a Bootstrap danger alert rendered globally in `_Layout.cshtml` using `TempData["ErrorMessage"]`.
+  - `Menu.OnGet` — Ollama / semantic search failure degrades gracefully (friendly message, empty results) instead of returning a 500.
+  - `BackfillEmbeddings.OnPost` — error stays on the backfill page with a message instead of silently redirecting to `/Index`. Replaced `Console.WriteLine` with `ILogger`.
+  - `Orders/Create.OnPostSubmit` — `SingleAsync` replaced with `SingleOrDefaultAsync` + `NotFound()` guard; `SaveChangesAsync` wrapped in try/catch. `OnPostAddItem` returns `StatusCode(500)` JSON on DB failure.
+  - `Reviews/Create.OnPostAsync` — null guard on `currentUser` returns `Forbid()` if the session expired between GET and POST; `SaveChangesAsync` wrapped in try/catch.
+  - `Customers/Create.OnPostAsync` — `SaveChangesAsync` wrapped in try/catch.
+- **Control flow** in `Menu.OnGet` refactored to use early returns — no `else` blocks, linear top-to-bottom reading.
+- `AGENTS.md` and `CONTRIBUTING.md` updated with explicit **control flow** and **error handling** style guidelines.
+
+### Tests
+- `SearchLogTests` — 14 integration tests covering log writes for all three search paths, jsonb round-trip for `Results`, admin page ordering, `ZeroResultsOnly` filter, and `TotalCount` accuracy.
+- `SearchLogModelTests` — 10 unit tests covering `SearchLog` defaults, `SearchResultItem` construction, and `SearchType` enum shape.
+
 ## [0.5.1] — 2026-04-25
 
 ### Added
