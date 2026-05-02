@@ -2,5 +2,5 @@ namespace SnackRack.Services;
 
 public interface IEmbeddingService
 {
-    Task<float[]> GetEmbeddingAsync(string text);
+    Task<Result<float[]>> GetEmbeddingAsync(string text);
 }

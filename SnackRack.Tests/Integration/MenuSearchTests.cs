@@ -111,7 +111,7 @@ public class MenuSearchTests(TestDatabaseFixture fixture)
         var mockEmbeddings = new Mock<IEmbeddingService>();
         mockEmbeddings
             .Setup(s => s.GetEmbeddingAsync(searchTerm))
-            .ReturnsAsync(MakeDirectionalEmbedding(hotDimension: 0));
+            .ReturnsAsync(Result<float[]>.Success(MakeDirectionalEmbedding(hotDimension: 0)));
 
         var page = new Menu(_fixture.DbContext, mockEmbeddings.Object, NullLogger<Menu>.Instance)
         {
@@ -154,7 +154,7 @@ public class MenuSearchTests(TestDatabaseFixture fixture)
         var mockEmbeddings = new Mock<IEmbeddingService>();
         mockEmbeddings
             .Setup(s => s.GetEmbeddingAsync(searchTerm))
-            .ReturnsAsync(MakeDirectionalEmbedding(hotDimension: 0));
+            .ReturnsAsync(Result<float[]>.Success(MakeDirectionalEmbedding(hotDimension: 0)));
 
         var page = new Menu(_fixture.DbContext, mockEmbeddings.Object, NullLogger<Menu>.Instance)
         {

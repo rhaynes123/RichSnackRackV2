@@ -23,6 +23,7 @@ public class BackfillEmbeddings : PageModel
 
     public int ProductsWithoutEmbedding { get; set; }
     public int ProcessedCount { get; set; }
+    public int FailedCount { get; set; }
 
     public async Task<IActionResult> OnGet()
     {
@@ -33,32 +34,43 @@ public class BackfillEmbeddings : PageModel
 
     public async Task<IActionResult> OnPost()
     {
-        try
-        {
-            var products = await _db.Products
-                .Where(p => p.DescriptionEmbedding == null && p.IsActive == true)
-                .ToListAsync();
+        var products = await _db.Products
+            .Where(p => p.DescriptionEmbedding == null && p.IsActive == true)
+            .ToListAsync();
 
-            foreach (var product in products)
+        foreach (var product in products)
+        {
+            var result = await _embeddings.GetEmbeddingAsync(product.Description);
+            if (!result.IsSuccess)
             {
-                var floats = await _embeddings.GetEmbeddingAsync(product.Description);
-                product.DescriptionEmbedding = new Vector(floats);
-                ProcessedCount++;
+                _logger.LogWarning("Failed to generate embedding for product '{ProductId}': {Error}", product.Id, result.Error);
+                FailedCount++;
+                continue;
             }
 
-            await _db.SaveChangesAsync();
-
-            ProductsWithoutEmbedding = await _db.Products
-                .CountAsync(p => p.DescriptionEmbedding == null);
-
-            return Page();
+            product.DescriptionEmbedding = new Vector(result.Value!);
+            ProcessedCount++;
         }
-        catch (Exception e)
+
+        if (ProcessedCount > 0)
         {
-            _logger.LogError(e, "Error during embedding backfill");
-            TempData["ErrorMessage"] = "An error occurred during the embedding backfill. Please try again.";
-            ProductsWithoutEmbedding = await _db.Products.CountAsync(p => p.DescriptionEmbedding == null);
-            return Page();
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error saving embeddings during backfill");
+                TempData["ErrorMessage"] = "Embeddings were generated but could not be saved. Please try again.";
+            }
         }
+
+        if (FailedCount > 0)
+            TempData["WarningMessage"] = $"{FailedCount} product(s) could not be embedded. Check logs for details.";
+
+        ProductsWithoutEmbedding = await _db.Products
+            .CountAsync(p => p.DescriptionEmbedding == null);
+
+        return Page();
     }
 }

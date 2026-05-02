@@ -97,7 +97,7 @@ public class SearchLogTests(TestDatabaseFixture fixture)
 
         var mockEmbeddings = new Mock<IEmbeddingService>();
         mockEmbeddings.Setup(s => s.GetEmbeddingAsync(term))
-            .ReturnsAsync(MakeDirectionalEmbedding(hotDimension: 10));
+            .ReturnsAsync(Result<float[]>.Success(MakeDirectionalEmbedding(hotDimension: 10)));
 
         await BuildMenuPage(term, mockEmbeddings.Object).OnGet();
         _fixture.DbContext.ChangeTracker.Clear();
@@ -132,7 +132,7 @@ public class SearchLogTests(TestDatabaseFixture fixture)
 
         var mockEmbeddings = new Mock<IEmbeddingService>();
         mockEmbeddings.Setup(s => s.GetEmbeddingAsync(term))
-            .ReturnsAsync(MakeDirectionalEmbedding(hotDimension: 11));
+            .ReturnsAsync(Result<float[]>.Success(MakeDirectionalEmbedding(hotDimension: 11)));
 
         await BuildMenuPage(term, mockEmbeddings.Object).OnGet();
         _fixture.DbContext.ChangeTracker.Clear();
@@ -165,7 +165,7 @@ public class SearchLogTests(TestDatabaseFixture fixture)
 
         var mockEmbeddings = new Mock<IEmbeddingService>();
         mockEmbeddings.Setup(s => s.GetEmbeddingAsync(term))
-            .ReturnsAsync(MakeDirectionalEmbedding(hotDimension: 12));
+            .ReturnsAsync(Result<float[]>.Success(MakeDirectionalEmbedding(hotDimension: 12)));
 
         await BuildMenuPage(term, mockEmbeddings.Object).OnGet();
         _fixture.DbContext.ChangeTracker.Clear();
@@ -187,7 +187,7 @@ public class SearchLogTests(TestDatabaseFixture fixture)
 
         var mockEmbeddings = new Mock<IEmbeddingService>();
         mockEmbeddings.Setup(s => s.GetEmbeddingAsync(term))
-            .ThrowsAsync(new HttpRequestException("Ollama is down"));
+            .ReturnsAsync(Result<float[]>.Failure("Ollama is down"));
 
         await BuildMenuPage(term, mockEmbeddings.Object).OnGet();
         _fixture.DbContext.ChangeTracker.Clear();

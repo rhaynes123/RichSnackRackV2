@@ -8,6 +8,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Result pattern** — `Services/Result<T>` type with `IsSuccess`, `Value`, and `Error` properties, and `Success`/`Failure` factory methods for representing operation outcomes without exceptions.
+
+### Changed
+- `IEmbeddingService.GetEmbeddingAsync` return type changed from `Task<float[]>` to `Task<Result<float[]>>`.
+- `OllamaEmbeddingService.GetEmbeddingAsync` now returns `Result.Failure` instead of throwing for null/whitespace input, non-2xx HTTP responses, and JSON deserialization errors. `ILogger<OllamaEmbeddingService>` added to constructor.
+- `Menu.OnGet` semantic search fallback replaced try/catch with a `Result.IsSuccess` check — failures are handled explicitly without exceptions as control flow.
+- `BackfillEmbeddings.OnPost` now handles embedding failures per-product (logging and skipping failures) rather than aborting the entire batch. Added `FailedCount` property and a `TempData["WarningMessage"]` when any items fail.
+
+### Tests
+- Updated `OllamaEmbeddingServiceTests` — constructor updated for new `ILogger` parameter; assertions updated to check `Result.IsSuccess` and `Result.Value`; tests that expected thrown exceptions now assert `Result.Failure` with the correct status code in the error message.
+- Updated `MenuSearchTests` and `SearchLogTests` mock setups to return `Result<float[]>.Success(...)` to match the new interface return type.
+- `SearchLogTests.OllamaUnavailable_WritesLog_WithTypeSemanticUnavailable` updated from `ThrowsAsync` to `ReturnsAsync(Result<float[]>.Failure(...))`.
+
+
 ## [0.6.0] — 2026-04-26
 
 ### Added

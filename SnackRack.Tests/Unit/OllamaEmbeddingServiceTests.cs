@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using SnackRack.Services;
 
 namespace SnackRack.Tests.Unit;
@@ -24,10 +25,11 @@ public class OllamaEmbeddingServiceTests
         var json = $"{{\"embedding\":[{string.Join(",", expected)}]}}";
         var response = OkJson(json);
 
-        var sut = new OllamaEmbeddingService(BuildClient(response), BuildConfig());
+        var sut = new OllamaEmbeddingService(BuildClient(response), BuildConfig(), NullLogger<OllamaEmbeddingService>.Instance);
         var result = await sut.GetEmbeddingAsync("salty snacks");
 
-        Assert.Equal(expected, result);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expected, result.Value);
     }
 
     [Fact]
@@ -36,10 +38,11 @@ public class OllamaEmbeddingServiceTests
         var floats = Enumerable.Range(0, 768).Select(i => (float)i / 768).ToArray();
         var json = $"{{\"embedding\":[{string.Join(",", floats)}]}}";
 
-        var sut = new OllamaEmbeddingService(BuildClient(OkJson(json)), BuildConfig());
+        var sut = new OllamaEmbeddingService(BuildClient(OkJson(json)), BuildConfig(), NullLogger<OllamaEmbeddingService>.Instance);
         var result = await sut.GetEmbeddingAsync("test");
 
-        Assert.Equal(768, result.Length);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(768, result.Value!.Length);
     }
 
     // ── URL routing ─────────────────────────────────────────────────────────
@@ -50,7 +53,7 @@ public class OllamaEmbeddingServiceTests
         string? capturedUrl = null;
         var handler = new CapturingHandler(OkJson("{\"embedding\":[0.1]}"), u => capturedUrl = u);
 
-        var sut = new OllamaEmbeddingService(new HttpClient(handler), BuildConfig("http://my-ollama:5000"));
+        var sut = new OllamaEmbeddingService(new HttpClient(handler), BuildConfig("http://my-ollama:5000"), NullLogger<OllamaEmbeddingService>.Instance);
         await sut.GetEmbeddingAsync("test");
 
         Assert.Equal("http://my-ollama:5000/api/embeddings", capturedUrl);
@@ -63,7 +66,7 @@ public class OllamaEmbeddingServiceTests
         var handler = new CapturingHandler(OkJson("{\"embedding\":[0.1]}"), u => capturedUrl = u);
         var emptyConfig = new ConfigurationBuilder().Build();
 
-        var sut = new OllamaEmbeddingService(new HttpClient(handler), emptyConfig);
+        var sut = new OllamaEmbeddingService(new HttpClient(handler), emptyConfig, NullLogger<OllamaEmbeddingService>.Instance);
         await sut.GetEmbeddingAsync("test");
 
         Assert.StartsWith("http://localhost:11434", capturedUrl);
@@ -75,31 +78,40 @@ public class OllamaEmbeddingServiceTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task GetEmbeddingAsync_ThrowsArgumentException_WhenTextIsNullOrWhitespace(string? text)
+    public async Task GetEmbeddingAsync_ReturnsFailure_WhenTextIsNullOrWhitespace(string? text)
     {
-        var sut = new OllamaEmbeddingService(BuildClient(OkJson("{\"embedding\":[]}")), BuildConfig());
+        var sut = new OllamaEmbeddingService(BuildClient(OkJson("{\"embedding\":[]}")), BuildConfig(), NullLogger<OllamaEmbeddingService>.Instance);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => sut.GetEmbeddingAsync(text!));
+        var result = await sut.GetEmbeddingAsync(text!);
+
+        Assert.False(result.IsSuccess);
+        Assert.NotNull(result.Error);
     }
 
     // ── Error handling ───────────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetEmbeddingAsync_ThrowsHttpRequestException_OnServerError()
+    public async Task GetEmbeddingAsync_ReturnsFailure_OnServerError()
     {
         var response = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
-        var sut = new OllamaEmbeddingService(BuildClient(response), BuildConfig());
+        var sut = new OllamaEmbeddingService(BuildClient(response), BuildConfig(), NullLogger<OllamaEmbeddingService>.Instance);
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => sut.GetEmbeddingAsync("test"));
+        var result = await sut.GetEmbeddingAsync("test");
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("503", result.Error);
     }
 
     [Fact]
-    public async Task GetEmbeddingAsync_ThrowsHttpRequestException_OnNotFound()
+    public async Task GetEmbeddingAsync_ReturnsFailure_OnNotFound()
     {
         var response = new HttpResponseMessage(HttpStatusCode.NotFound);
-        var sut = new OllamaEmbeddingService(BuildClient(response), BuildConfig());
+        var sut = new OllamaEmbeddingService(BuildClient(response), BuildConfig(), NullLogger<OllamaEmbeddingService>.Instance);
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => sut.GetEmbeddingAsync("test"));
+        var result = await sut.GetEmbeddingAsync("test");
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("404", result.Error);
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

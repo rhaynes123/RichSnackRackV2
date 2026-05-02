@@ -57,40 +57,40 @@ public class Menu : PageModel
 
         _logger.LogInformation("No LIKE matches, falling back to semantic search.");
 
-        try
+        var embeddingResult = await _embeddings.GetEmbeddingAsync(term);
+
+        if (!embeddingResult.IsSuccess)
         {
-            var floats = await _embeddings.GetEmbeddingAsync(term);
-            _logger.LogInformation("Embedding generated ({Dimensions} dimensions), querying database.", floats.Length);
-
-            var queryVector = new Vector(floats);
-            const double similarityThreshold = 0.3;
-
-            var results = await _db.Products
-                .Where(p => p.IsActive == true && p.DescriptionEmbedding != null)
-                .Select(p => new { Product = p, Distance = p.DescriptionEmbedding!.CosineDistance(queryVector) })
-                .Where(x => x.Distance < similarityThreshold)
-                .OrderBy(x => x.Distance)
-                .Take(10)
-                .ToListAsync();
-
-            foreach (var r in results)
-                _logger.LogInformation("  [{Distance:F4}] {Name}", r.Distance, r.Product.Name);
-
-            ActiveProducts = results.Select(r => r.Product).ToList();
-            _logger.LogInformation("Semantic search returned {Count} product(s) within threshold {Threshold}.", ActiveProducts.Count, similarityThreshold);
-
-            if (ActiveProducts.Count == 0)
-                _logger.LogWarning("Semantic search also returned nothing — embeddings may not be backfilled, or the threshold ({Threshold}) may be too strict.", similarityThreshold);
-
-            var resultItems = results.Select(r => new SearchResultItem(r.Product.Id, r.Distance)).ToList();
-            await WriteSearchLog(term, SearchType.Semantic, 0, ActiveProducts.Count, resultItems);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Semantic search unavailable for term '{SearchTerm}'.", term);
+            _logger.LogWarning("Semantic search unavailable for term '{SearchTerm}': {Error}", term, embeddingResult.Error);
             TempData["ErrorMessage"] = "Semantic search is unavailable. Showing no results for your query.";
             await WriteSearchLog(term, SearchType.SemanticUnavailable, 0, 0, []);
+            return Page();
         }
+
+        _logger.LogInformation("Embedding generated ({Dimensions} dimensions), querying database.", embeddingResult.Value!.Length);
+
+        var queryVector = new Vector(embeddingResult.Value!);
+        const double similarityThreshold = 0.3;
+
+        var results = await _db.Products
+            .Where(p => p.IsActive == true && p.DescriptionEmbedding != null)
+            .Select(p => new { Product = p, Distance = p.DescriptionEmbedding!.CosineDistance(queryVector) })
+            .Where(x => x.Distance < similarityThreshold)
+            .OrderBy(x => x.Distance)
+            .Take(10)
+            .ToListAsync();
+
+        foreach (var r in results)
+            _logger.LogInformation("  [{Distance:F4}] {Name}", r.Distance, r.Product.Name);
+
+        ActiveProducts = results.Select(r => r.Product).ToList();
+        _logger.LogInformation("Semantic search returned {Count} product(s) within threshold {Threshold}.", ActiveProducts.Count, similarityThreshold);
+
+        if (ActiveProducts.Count == 0)
+            _logger.LogWarning("Semantic search also returned nothing — embeddings may not be backfilled, or the threshold ({Threshold}) may be too strict.", similarityThreshold);
+
+        var resultItems = results.Select(r => new SearchResultItem(r.Product.Id, r.Distance)).ToList();
+        await WriteSearchLog(term, SearchType.Semantic, 0, ActiveProducts.Count, resultItems);
 
         return Page();
     }
