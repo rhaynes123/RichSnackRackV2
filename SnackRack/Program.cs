@@ -18,6 +18,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddHttpClient<IEmbeddingService, OllamaEmbeddingService>();
 
+builder.Services.AddScoped<SnackRack.Pages.Features.Products.ProductSearchQuery>();
+builder.Services.AddScoped<SnackRack.Pages.Features.Orders.AddItemToOrderCommand>();
+builder.Services.AddScoped<SnackRack.Pages.Features.Orders.SubmitOrderCommand>();
+
 
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -43,8 +47,9 @@ builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
-using (var serviceScope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var serviceScope = app.Services.CreateScope();
     var context = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.Migrate();
 }
@@ -73,3 +78,5 @@ app.MapRazorPages()
     .WithStaticAssets();
 
 app.Run();
+
+public partial class Program { }

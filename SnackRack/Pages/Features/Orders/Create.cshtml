@@ -28,17 +28,18 @@
        value="@Model.OrderId" />
 
 
-<!-- Search Bar -->
+<!-- Product Select -->
 <div class="mb-3">
     <label class="form-label">Add Product</label>
     <div class="input-group">
-        <input id="productSearch"
-               class="form-control"
-               placeholder="Enter product Name (demo)" />
-        <button class="btn btn-outline-primary"
-                onclick="addProduct()">
-            Add
-        </button>
+        <select id="productSelect" class="form-select">
+            <option value="">-- Select a product --</option>
+            @foreach (var product in Model.AvailableProducts)
+            {
+                <option value="@product.Id">@product.Name — @product.Price.ToString("C")</option>
+            }
+        </select>
+        <button class="btn btn-outline-primary" onclick="addProduct()">Add</button>
     </div>
 </div>
 
@@ -72,8 +73,8 @@
 @section Scripts {
 <script>
 async function addProduct() {
-    const name = document.getElementById("productSearch").value;
-    if (!name) return;
+    const productId = document.getElementById("productSelect").value;
+    if (!productId) return;
     const orderId = document.getElementById("currentOrderId").value;
 
     const response = await fetch("?handler=AddItem", {
@@ -84,7 +85,7 @@ async function addProduct() {
                 document.querySelector('input[name="__RequestVerificationToken"]')?.value
         },
         body: JSON.stringify({
-            productName: name,
+            productId: productId,
             orderId: orderId,
         })
     });

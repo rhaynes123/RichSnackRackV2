@@ -35,15 +35,18 @@ public class SearchLogTests(TestDatabaseFixture fixture)
         return floats;
     }
 
-    // Gives Menu an HttpContext so User.FindFirstValue does not throw inside WriteSearchLog,
-    // and a no-op TempData so the catch block's TempData assignment does not throw.
-    private Menu BuildMenuPage(string? searchTerm, IEmbeddingService embeddings) =>
-        new(_fixture.DbContext, embeddings, NullLogger<Menu>.Instance)
+    // Gives Menu an HttpContext so User.FindFirstValue does not throw inside OnGet,
+    // and a no-op TempData so TempData assignments do not throw.
+    private Menu BuildMenuPage(string? searchTerm, IEmbeddingService embeddings)
+    {
+        var query = new ProductSearchQuery(_fixture.DbContext, embeddings, NullLogger<ProductSearchQuery>.Instance);
+        return new Menu(query, NullLogger<Menu>.Instance)
         {
             SearchTerm = searchTerm,
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() },
             TempData = Mock.Of<ITempDataDictionary>()
         };
+    }
 
     // ── Log writing ───────────────────────────────────────────────────────────
 

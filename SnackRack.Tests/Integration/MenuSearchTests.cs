@@ -56,16 +56,13 @@ public class MenuSearchTests(TestDatabaseFixture fixture)
         // Strict mock — any call to GetEmbeddingAsync will throw, proving it is never reached.
         var mockEmbeddings = new Mock<IEmbeddingService>(MockBehavior.Strict);
 
-        var page = new Menu(_fixture.DbContext, mockEmbeddings.Object, NullLogger<Menu>.Instance)
-        {
-            SearchTerm = $"Classic Chips {uid}"
-        };
+        var query = new ProductSearchQuery(_fixture.DbContext, mockEmbeddings.Object, NullLogger<ProductSearchQuery>.Instance);
 
         // --- Act ---
-        await page.OnGet();
+        var result = await query.ExecuteAsync($"Classic Chips {uid}", null);
 
         // --- Assert ---
-        Assert.Contains(page.ActiveProducts, p => p.Id == chipsProduct.Id);
+        Assert.Contains(result.Products, p => p.Id == chipsProduct.Id);
         mockEmbeddings.VerifyNoOtherCalls();
     }
 
@@ -113,17 +110,14 @@ public class MenuSearchTests(TestDatabaseFixture fixture)
             .Setup(s => s.GetEmbeddingAsync(searchTerm))
             .ReturnsAsync(Result<float[]>.Success(MakeDirectionalEmbedding(hotDimension: 0)));
 
-        var page = new Menu(_fixture.DbContext, mockEmbeddings.Object, NullLogger<Menu>.Instance)
-        {
-            SearchTerm = searchTerm
-        };
+        var query = new ProductSearchQuery(_fixture.DbContext, mockEmbeddings.Object, NullLogger<ProductSearchQuery>.Instance);
 
         // --- Act ---
-        await page.OnGet();
+        var result = await query.ExecuteAsync(searchTerm, null);
 
         // --- Assert ---
-        Assert.Contains(page.ActiveProducts, p => p.Id == similarProduct.Id);
-        Assert.DoesNotContain(page.ActiveProducts, p => p.Id == dissimilarProduct.Id);
+        Assert.Contains(result.Products, p => p.Id == similarProduct.Id);
+        Assert.DoesNotContain(result.Products, p => p.Id == dissimilarProduct.Id);
         mockEmbeddings.Verify(s => s.GetEmbeddingAsync(searchTerm), Times.Once);
     }
 
@@ -156,16 +150,13 @@ public class MenuSearchTests(TestDatabaseFixture fixture)
             .Setup(s => s.GetEmbeddingAsync(searchTerm))
             .ReturnsAsync(Result<float[]>.Success(MakeDirectionalEmbedding(hotDimension: 0)));
 
-        var page = new Menu(_fixture.DbContext, mockEmbeddings.Object, NullLogger<Menu>.Instance)
-        {
-            SearchTerm = searchTerm
-        };
+        var query = new ProductSearchQuery(_fixture.DbContext, mockEmbeddings.Object, NullLogger<ProductSearchQuery>.Instance);
 
         // --- Act ---
-        await page.OnGet();
+        var result = await query.ExecuteAsync(searchTerm, null);
 
         // --- Assert ---
-        Assert.DoesNotContain(page.ActiveProducts, p => p.Id == product.Id);
+        Assert.DoesNotContain(result.Products, p => p.Id == product.Id);
     }
 
     /// <summary>
@@ -201,17 +192,14 @@ public class MenuSearchTests(TestDatabaseFixture fixture)
 
         var mockEmbeddings = new Mock<IEmbeddingService>(MockBehavior.Strict);
 
-        var page = new Menu(_fixture.DbContext, mockEmbeddings.Object, NullLogger<Menu>.Instance)
-        {
-            SearchTerm = null
-        };
+        var query = new ProductSearchQuery(_fixture.DbContext, mockEmbeddings.Object, NullLogger<ProductSearchQuery>.Instance);
 
         // --- Act ---
-        await page.OnGet();
+        var result = await query.ExecuteAsync(null, null);
 
         // --- Assert ---
-        Assert.Contains(page.ActiveProducts, p => p.Id == activeProduct.Id);
-        Assert.DoesNotContain(page.ActiveProducts, p => p.Id == inactiveProduct.Id);
+        Assert.Contains(result.Products, p => p.Id == activeProduct.Id);
+        Assert.DoesNotContain(result.Products, p => p.Id == inactiveProduct.Id);
         mockEmbeddings.VerifyNoOtherCalls();
     }
 }

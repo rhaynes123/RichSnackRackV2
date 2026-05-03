@@ -9,7 +9,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **`SnackRack.Tests.UI` project** — new Playwright UI test project (`Microsoft.Playwright.Xunit 1.52`) targeting Chromium, with a `WebServerFixture` that spins up a real Kestrel server backed by a Testcontainers PostgreSQL instance so tests run fully in-process with no external server required.
+- **`MenuPageTests`** (4 tests) — verifies the product table loads seeded rows, keyword search filters to matching products, the Clear link restores the full list, and each product row has an Order button.
+- **`CreateOrderPageTests`** (5 tests) — verifies the product dropdown is populated, adding an item appears in the order table, adding the same item twice increments quantity to 2, adding two distinct items creates two rows, and the Submit button is visible.
+- **`public partial class Program {}`** added to `Program.cs` so `WebApplicationFactory<Program>` can reference the entry point from the UI test project.
+
+### Changed
+- `Program.cs` auto-migration is now skipped when `IHostEnvironment` is `"Testing"`, letting test fixtures own the migration step and preventing double-migration when the dual Kestrel host is started.
+
+
+- **`ProductSearchQuery`** (`Pages/Features/Products/ProductSearchQuery.cs`) — extracts all search logic (LIKE, semantic fallback, search log writing) from `Menu.OnGet` into a self-contained query object returning `ProductSearchResult`.
+- **`AddItemToOrderCommand`** (`Pages/Features/Orders/AddItemToOrderCommand.cs`) — extracts `AddOrIncrement` and `GetProduct` helpers from `CreateModel` into a command object with `ExecuteAsync(orderId, productId, customer)`.
+- **`SubmitOrderCommand`** (`Pages/Features/Orders/SubmitOrderCommand.cs`) — extracts order submission and customer-update logic from `CreateModel.OnPostSubmit` into a command object returning `SubmitOrderResult` with a `SubmitOutcome` discriminated by enum.
+- **`AddItemToOrderCommandTests`** — 4 new integration tests covering new item, quantity increment, two distinct products, and unknown product ID.
+
+### Changed
+- `Menu` now injects `ProductSearchQuery` instead of `ApplicationDbContext` + `IEmbeddingService`; `OnGet` reduced to resolving userId, delegating to the query, and mapping the result to `TempData`/`ActiveProducts`.
+- `CreateModel` now injects `AddItemToOrderCommand` and `SubmitOrderCommand`; `OnGet`, `OnPostAddItem`, and `OnPostSubmit` delegate all domain logic to commands.
+- `Program.cs` registers `ProductSearchQuery`, `AddItemToOrderCommand`, and `SubmitOrderCommand` as scoped services.
+- `MenuSearchTests` updated to construct `ProductSearchQuery` directly and assert on `ProductSearchResult.Products`.
+- `SearchLogTests.BuildMenuPage` updated to construct `ProductSearchQuery` and pass it to the new `Menu` constructor.
+
+
 - **Result pattern** — `Services/Result<T>` type with `IsSuccess`, `Value`, and `Error` properties, and `Success`/`Failure` factory methods for representing operation outcomes without exceptions.
+- **`CLAUDE.md`** — added repo-root instructions file that Claude Code loads automatically every session, enforcing test runs after code changes, changelog updates, and summarising key conventions from `AGENTS.md`.
+- **Product dropdown on Create Order page** — replaced free-text product name input with a `<select>` populated from active products (name + price). `AddItemToOrder` now carries `ProductId` (Guid) instead of `ProductName`; the AJAX handler resolves the product by ID.
 
 ### Changed
 - `IEmbeddingService.GetEmbeddingAsync` return type changed from `Task<float[]>` to `Task<Result<float[]>>`.
