@@ -24,13 +24,15 @@ public class CreateModel : PageModel
     private readonly ApplicationDbContext _db;
     private readonly AddItemToOrderCommand _addItem;
     private readonly SubmitOrderCommand _submitOrder;
+    private readonly CancelOrderCommand _cancelOrder;
     private readonly ILogger<CreateModel> _logger;
 
-    public CreateModel(ApplicationDbContext db, AddItemToOrderCommand addItem, SubmitOrderCommand submitOrder, ILogger<CreateModel> logger)
+    public CreateModel(ApplicationDbContext db, AddItemToOrderCommand addItem, SubmitOrderCommand submitOrder, CancelOrderCommand cancelOrder, ILogger<CreateModel> logger)
     {
         _db = db;
         _addItem = addItem;
         _submitOrder = submitOrder;
+        _cancelOrder = cancelOrder;
         _logger = logger;
     }
 
@@ -111,6 +113,20 @@ public class CreateModel : PageModel
         return new JsonResult(Items);
     }
 
+    public async Task<IActionResult> OnPostCancel()
+    {
+        var result = await _cancelOrder.ExecuteAsync(OrderId);
+
+        return result.Outcome switch
+        {
+            CancelOutcome.NotFound => NotFound(),
+            CancelOutcome.InvalidStatus => BadRequest(),
+            CancelOutcome.Failed => RedirectWithError(result.Error, result.OrderId),
+            CancelOutcome.Succeeded => RedirectToPage("/Features/Orders/Confirmation", new { orderId = result.OrderId }),
+            _ => BadRequest()
+        };
+    }
+
     private IActionResult RedirectWithError(string? error, Guid? orderId)
     {
         TempData["ErrorMessage"] = error;
@@ -140,6 +156,7 @@ public class Order
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     public required Customer Customer { get; set; }
     public OrderStatus Status { get; set; }
+    public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 }
 
 public record AddItemToOrder

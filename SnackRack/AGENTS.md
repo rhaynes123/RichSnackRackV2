@@ -77,6 +77,38 @@ SnackRack.Tests/             ← test project (sibling directory)
 ### Backfill embeddings
 After adding or seeding new products, hit `GET /Features/Admin/BackfillEmbeddings` (shows count), then `POST` to generate missing embeddings via Ollama.
 
+## Spec-driven development workflow
+
+Every feature has a `SPEC.md` in its feature folder (`Pages/Features/<Feature>/SPEC.md`). This file is the single source of truth for what the feature does — it is edited as the feature evolves, not appended to.
+
+### Starting a new feature or extending an existing one
+1. Update (or create) `SPEC.md` with numbered acceptance criteria before writing any code.
+2. Write test method stubs — one per criterion — using `[Fact(Skip = "spec: not yet implemented")]` so the spec is immediately visible in the test runner.
+3. Implement the feature, removing `Skip` from each test as its criterion is satisfied.
+4. All tests must pass before the feature is considered done.
+
+### Test method naming
+Use `[Subject]_[Condition]_[ExpectedOutcome]`, for example:
+- `AddItem_ProductNotFound_ReturnsEmptyList`
+- `SubmitOrder_MissingPhoneNumber_ReturnsNeedsCustomerInfo`
+
+### Test summary block
+Every test method should carry a structured summary comment:
+
+```csharp
+/// <summary>
+/// SCENARIO: one-line description of the situation
+/// GIVEN:    preconditions
+/// WHEN:     the action taken
+/// THEN:     expected outcome
+/// SPEC:     #N — Feature Name
+/// </summary>
+```
+
+### What SPEC.md is not
+- Not a changelog — use `CHANGELOG.md` for history.
+- Not generated from code — it describes intent, not implementation.
+
 ## Changelog
 
 **Always update `CHANGELOG.md` when making code changes.** Add an entry under `## [Unreleased]` describing what was added, changed, or fixed. Follow the existing format — group by `### Added`, `### Changed`, `### Fixed`, and `### Tests` as appropriate.

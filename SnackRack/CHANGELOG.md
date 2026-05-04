@@ -9,6 +9,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **`SnackRack.Benchmarks` project** — new console app (`net10.0`) using BenchmarkDotNet to establish performance baselines for the most computationally important paths.
+- **`EmbeddingServiceBenchmarks`** — benchmarks `OllamaEmbeddingService.GetEmbeddingAsync` in-process with a fake `HttpMessageHandler`; measures serialization, result wrapping, and allocations.
+- **`ProductSearchBenchmarks`** — benchmarks `ProductSearchQuery.ExecuteAsync` against a Testcontainers PostgreSQL database; covers both the LIKE path (`SearchLike`) and the cosine-distance semantic path (`SearchSemantic`).
+- **`OrderCommandBenchmarks`** — benchmarks `AddItemToOrderCommand`, `SubmitOrderCommand`, and `CancelOrderCommand` against a Testcontainers PostgreSQL database; uses `[IterationSetup]` to create a fresh pending order per iteration.
+- **Dual run modes** — `dotnet run -c Release` for full statistical analysis; `dotnet run -- --dry` for smoke-test validation using `DebugInProcessConfig`.
+
+### Added — Auto-Cancel Stale Pending Orders
+- **`CreatedAt` on `Order`** — `DateTimeOffset` property (maps to `created_at` column) with a default of `DateTimeOffset.UtcNow`; existing rows default to `CURRENT_TIMESTAMP` via migration.
+- **`AddOrderCreatedAt` migration** — adds `created_at timestamp with time zone NOT NULL` to the `orders` table with `CURRENT_TIMESTAMP` as the SQL default for existing rows.
+- **`ExpireStaleOrdersService`** — `BackgroundService` that runs every hour, bulk-cancels all `Pending` orders older than 24 hours via a single `ExecuteUpdateAsync` call, and logs the count. Exceptions are caught and logged so the loop never crashes.
+- **`ExpireStaleOrdersService` registered** in `Program.cs` as a hosted service.
+- **`InternalsVisibleTo("SnackRack.Tests")`** added to `SnackRack.csproj` so integration tests can call the `internal` `CancelStaleOrdersAsync` method directly.
+
+### Tests
+- **`ExpireStaleOrdersServiceTests`** (4 tests) — covers: old pending order is cancelled, recent pending order is untouched, and non-pending orders (Submitted, Completed) older than 24h are untouched.
+
+### Added
+- **`SPEC.md`** files added for all existing features (`Products`, `Orders`, `Customers`, `Reviews`, `Admin`) documenting numbered acceptance criteria, key types, constraints, and page routes as the canonical source of truth for each feature.
+- **Spec-driven development workflow** added to `AGENTS.md` — covers `SPEC.md` authoring conventions, test stub pattern (`[Fact(Skip = "spec: not yet implemented")]`), test naming convention, and structured `SCENARIO/GIVEN/WHEN/THEN/SPEC` summary block format.
+
+### Added — Order Cancellation
+- **`CancelOrderCommand`** — new command that sets a `Pending` order's status to `Cancelled`; returns typed `CancelOutcome` (`Succeeded`, `NotFound`, `InvalidStatus`, `Failed`).
+- **`OnPostCancel` handler** on the `Create` page — delegates to `CancelOrderCommand` and redirects to the Confirmation page on success, or surfaces errors consistently with the existing submit flow.
+- **Cancel Order button** added to `Create.cshtml` alongside the Submit button.
+- **`CancelOrderCommand` registered** in `Program.cs` as a scoped service.
+- **`CancelOrderCommandTests`** (5 tests) — covers spec criteria #21–23: pending order cancels successfully, unknown order returns `NotFound`, and non-pending orders (`Submitted`, `Completed`, `Cancelled`) return `InvalidStatus`.
+- **Orders `SPEC.md`** updated with criteria #21–24 for order cancellation.
+
+### Added (previous)
 - **`SnackRack.Tests.UI` project** — new Playwright UI test project (`Microsoft.Playwright.Xunit 1.52`) targeting Chromium, with a `WebServerFixture` that spins up a real Kestrel server backed by a Testcontainers PostgreSQL instance so tests run fully in-process with no external server required.
 - **`MenuPageTests`** (4 tests) — verifies the product table loads seeded rows, keyword search filters to matching products, the Clear link restores the full list, and each product row has an Order button.
 - **`CreateOrderPageTests`** (5 tests) — verifies the product dropdown is populated, adding an item appears in the order table, adding the same item twice increments quantity to 2, adding two distinct items creates two rows, and the Submit button is visible.

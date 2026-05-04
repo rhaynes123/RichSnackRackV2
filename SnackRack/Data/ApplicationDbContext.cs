@@ -115,6 +115,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasConversion<int>()
                 .HasDefaultValue(OrderStatus.Pending)
                 .IsRequired();
+
+            o.Property(x => x.CreatedAt)
+                .HasColumnName("created_at")
+                .IsRequired();
                 
 
             o.HasOne(x => x.Customer)

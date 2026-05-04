@@ -65,10 +65,16 @@
         }
     </tbody>
 </table>
-<form method="post" asp-page-handler="Submit">
-    <input type="hidden" name="orderId" value="@Model.OrderId" />
-    <button type="submit" class="btn btn-success">Submit Order</button>
-</form>
+<div class="d-flex gap-2">
+    <form method="post" asp-page-handler="Submit">
+        <input type="hidden" name="orderId" value="@Model.OrderId" />
+        <button type="submit" class="btn btn-success">Submit Order</button>
+    </form>
+    <form method="post" asp-page-handler="Cancel">
+        <input type="hidden" name="orderId" value="@Model.OrderId" />
+        <button type="submit" class="btn btn-outline-danger">Cancel Order</button>
+    </form>
+</div>
 
 @section Scripts {
 <script>
