@@ -1,0 +1,99 @@
+@page
+@using SnackRack.Pages.Features.Orders
+@model SnackRack.Pages.Features.Admin.Sales
+
+<h2 class="mb-4">Sales</h2>
+
+@if (TempData["ErrorMessage"] is string error)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+@if (!Model.OrderSummaries.Any())
+{
+    <p class="text-muted">No orders found.</p>
+}
+
+@foreach (var order in Model.OrderSummaries)
+{
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <strong>@order.CustomerName</strong>
+                @if (!string.IsNullOrEmpty(order.CustomerEmail))
+                {
+                    <span class="text-muted ms-2">(@order.CustomerEmail)</span>
+                }
+            </div>
+            <div class="d-flex gap-3 align-items-center">
+                <span class="badge @(order.Status switch {
+                    OrderStatus.Submitted => "bg-primary",
+                    OrderStatus.Completed => "bg-success",
+                    OrderStatus.Cancelled => "bg-secondary",
+                    _ => "bg-warning text-dark"
+                })">@order.Status</span>
+                <small class="text-muted">@order.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</small>
+            </div>
+        </div>
+        <div class="card-body">
+            <h6>Items</h6>
+            <table class="table table-sm table-bordered mb-3">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th class="text-end">Price</th>
+                        <th class="text-end">Qty</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in order.Items)
+                    {
+                        <tr>
+                            <td>@item.ProductName</td>
+                            <td class="text-end">@item.Price.ToString("C")</td>
+                            <td class="text-end">@item.Quantity</td>
+                            <td class="text-end">@item.LineTotal.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold">
+                        <td colspan="3" class="text-end">Order Total</td>
+                        <td class="text-end">@order.OrderTotal.ToString("C")</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            @if (order.Reviews.Any())
+            {
+                <h6>Reviews</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>Title</th>
+                            <th>Comment</th>
+                            <th>Reviewed by</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var review in order.Reviews)
+                        {
+                            <tr>
+                                <td>@review.ProductName</td>
+                                <td>@review.Title</td>
+                                <td>@review.Comment</td>
+                                <td class="text-muted">@review.UserEmail</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="text-muted mb-0"><em>No reviews for products in this order.</em></p>
+            }
+        </div>
+    </div>
+}

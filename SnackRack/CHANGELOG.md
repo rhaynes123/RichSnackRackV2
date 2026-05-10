@@ -8,6 +8,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+- **Admin Sales page** — rebuilt `Sales.cshtml` / `Sales.cshtml.cs` to correctly show orders with their line items (product name, price, quantity, line total, order total), and any reviews left for products in each order (including the reviewer's email). Replaced the incorrect customer-email join with a two-query approach: load orders with customer + items, then load reviews filtered to the product IDs in those orders.
+
 ### Added
 - **`SnackRack.Benchmarks` project** — new console app (`net10.0`) using BenchmarkDotNet to establish performance baselines for the most computationally important paths.
 - **`EmbeddingServiceBenchmarks`** — benchmarks `OllamaEmbeddingService.GetEmbeddingAsync` in-process with a fake `HttpMessageHandler`; measures serialization, result wrapping, and allocations.
