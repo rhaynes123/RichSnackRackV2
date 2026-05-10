@@ -8,7 +8,15 @@ namespace SnackRack.Pages.Features.Admin;
 
 public class Sales : PageModel
 {
+    private const int PageSize = 50;
+
     public List<OrderSummary> OrderSummaries { get; set; } = [];
+    public int TotalOrderCount { get; set; }
+    public int TotalPages => (int)Math.Ceiling(TotalOrderCount / (double)PageSize);
+
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+
     private readonly ILogger<Sales> _logger;
     private readonly ApplicationDbContext _context;
 
@@ -22,17 +30,19 @@ public class Sales : PageModel
     {
         try
         {
+            TotalOrderCount = await _context.Orders.CountAsync(cancellationToken);
+
             var orders = await _context.Orders
-                .Where(o => o.Status.Equals(OrderStatus.Submitted))
                 .AsNoTracking()
                 .Include(o => o.Customer)
                 .Include(o => o.OrderItems)
                 .OrderByDescending(o => o.CreatedAt)
+                .Skip((PageNumber - 1) * PageSize)
+                .Take(PageSize)
                 .ToListAsync(cancellationToken);
 
             var productIds = orders
-                .SelectMany(o => o.OrderItems
-                    .Select(i => i.ProductId))
+                .SelectMany(o => o.OrderItems.Select(i => i.ProductId))
                 .Distinct()
                 .ToList();
 
@@ -53,9 +63,10 @@ public class Sales : PageModel
                     .Select(i => new OrderItemSummary(i.ProductName, i.Price, i.Quantity))
                     .ToList();
 
-                var orderProductIds = o.OrderItems.
-                    Select(i => i.ProductId)
+                var orderProductIds = o.OrderItems
+                    .Select(i => i.ProductId)
                     .ToHashSet();
+
                 var orderReviews = orderProductIds
                     .Where(pid => reviewsByProductId.ContainsKey(pid))
                     .SelectMany(pid => reviewsByProductId[pid])
@@ -63,7 +74,6 @@ public class Sales : PageModel
                     .ToList();
 
                 return new OrderSummary(
-                    o.Id,
                     o.Customer.Name,
                     o.Customer.Email,
                     o.CreatedAt,
@@ -75,9 +85,20 @@ public class Sales : PageModel
 
             return Page();
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Sales page request was cancelled");
+            return Page();
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "A database error occurred while getting sales");
+            TempData["ErrorMessage"] = "A database error occurred while getting your sales. Please try again.";
+            return Page();
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while getting sales");
+            _logger.LogError(ex, "An unexpected error occurred while getting sales");
             TempData["ErrorMessage"] = "An error occurred while getting your sales. Please try again.";
             return Page();
         }
@@ -92,7 +113,6 @@ public record OrderItemSummary(string ProductName, decimal Price, int Quantity)
 public record ReviewSummary(string ProductName, string Title, string Comment, string UserEmail);
 
 public record OrderSummary(
-    Guid OrderId,
     string CustomerName,
     string? CustomerEmail,
     DateTimeOffset CreatedAt,
