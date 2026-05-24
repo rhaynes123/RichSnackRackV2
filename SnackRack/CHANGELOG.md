@@ -8,6 +8,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Tests
+- **`CreateOrderDemoTests`** — headed Playwright demo test that opens a visible Chromium browser with 800 ms slow-mo and walks through selecting two products on the Create Order page. Tagged `[Trait("Category", "Demo")]` so it is excluded from normal test runs; run explicitly with `--filter "Category=Demo"`.
+- **`default.runsettings`** — added to `SnackRack.Tests.UI` with `TestCaseFilter=Category!=Demo` (referenced via `VSTestRunSettingsFile` in the `.csproj`) to prevent headed demo tests from running automatically.
+
+### Changed
+- **Orders tab navigation** — replaced separate "Order" and "My Orders" nav links with a single "Orders" nav entry; added `_OrdersTabNav.cshtml` partial (Bootstrap `.nav-tabs`) included in both `Create.cshtml` and `History.cshtml` to show the active tab contextually.
+
+### Fixed
+- **`OrderHistoryQuery`** — moved `OrderByDescending` to in-memory sort after `ToListAsync`; EF Core could not translate the ordering expression over a `LeftJoin`-projected record type.
+
+### Added
+- **`Pages/Features/Orders/History` page** — customer-facing order history showing all submitted/completed orders with their line items. Uses EF Core 10's new `LeftJoin` operator to join `OrderItems` against the current user's `Reviews` in a single query; items with no review show a "Write a review" link, reviewed items show the review title.
+- **`OrderHistoryQuery`** — scoped service encapsulating the left-join query; registered in `Program.cs`.
+- **"My Orders" nav link** — added to `_Layout.cshtml` between Reviews and Admin.
+
+### Tests
+- **`OrderHistoryQueryTests`** — three integration tests covering: reviewed vs unreviewed items in the same order, exclusion of Pending/Cancelled orders, and isolation between users.
+
 ### Changed
 - **Admin Sales page (`Sales.cshtml` / `Sales.cshtml.cs`)** — removed status filter so all orders (Submitted, Completed, Cancelled) are shown; added server-side pagination (50 per page) with previous/next navigation; added specific `OperationCanceledException` and `DbUpdateException` catch blocks before the general `Exception` fallback; removed the unused `OrderId` positional parameter from `OrderSummary`; display order timestamps in UTC instead of server local time.
 

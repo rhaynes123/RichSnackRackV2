@@ -1,8 +1,7 @@
 @page
 @model SnackRack.Pages.Features.Orders.CreateModel
 
-
-<h2>Create Order</h2>
+<partial name="_OrdersTabNav" model='"new-order"' />
 @Html.AntiForgeryToken()
 @if (Model.OrderId.HasValue)
 {

@@ -77,7 +77,7 @@ public class Create : PageModel
             TempData["ErrorMessage"] = "An error occurred while saving your review. Please try again.";
             return RedirectToPage(new { ProductId });
         }
-        return RedirectToPage("./MyReviews");
+        return RedirectToPage("./AllReviews");
     }
 }
 

@@ -22,6 +22,7 @@ builder.Services.AddScoped<SnackRack.Pages.Features.Products.ProductSearchQuery>
 builder.Services.AddScoped<SnackRack.Pages.Features.Orders.AddItemToOrderCommand>();
 builder.Services.AddScoped<SnackRack.Pages.Features.Orders.SubmitOrderCommand>();
 builder.Services.AddScoped<SnackRack.Pages.Features.Orders.CancelOrderCommand>();
+builder.Services.AddScoped<SnackRack.Pages.Features.Orders.OrderHistoryQuery>();
 builder.Services.AddHostedService<SnackRack.Pages.Features.Orders.ExpireStaleOrdersService>();
 
 

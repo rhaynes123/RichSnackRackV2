@@ -1,0 +1,6 @@
+<RunSettings>
+  <RunConfiguration>
+    <!-- Exclude headed demo tests unless explicitly targeted with --filter "Category=Demo" -->
+    <TestCaseFilter>Category!=Demo</TestCaseFilter>
+  </RunConfiguration>
+</RunSettings>

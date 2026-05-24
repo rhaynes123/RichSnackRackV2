@@ -1,0 +1,14 @@
+@* Pages/Shared/_OrdersTabNav.cshtml *@
+@model string
+
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link @(Model == "new-order" ? "active" : "")"
+           asp-page="/Features/Orders/Create">New Order</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model == "my-orders" ? "active" : "")"
+           asp-page="/Features/Orders/History">My Orders</a>
+    </li>
+</ul>
+<h2 class="mb-3">@(Model == "new-order" ? "New Order" : "My Orders")</h2>
